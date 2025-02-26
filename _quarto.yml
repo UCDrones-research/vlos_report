@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Estimating Visual Line of Sight"
+  navbar:
+    background: primary
+    search: true
+    right:
+      - href: index.qmd
+        text: Home
+      - href: about.qmd
+        text: Team
+
+  repo-url: https://github.com/UCDrones-research/vlos_report
+  repo-actions: [edit, source, issue]
+  page-footer: "UC Center of Excellence on UAS Safety, University of California, 2025" 
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+    css: styles.css
+    toc: true
+
+editor: visual
+
