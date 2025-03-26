@@ -97,7 +97,7 @@ calculateEASAVLOS <- function(size = c(4.2,11.3) , fixedWing = FALSE) {
   #Extract
   x <- size[1]/12 # Convert inches to ft
   y <- size[2]/12 # Convert inches to ft
-  CD <- sqrt(x^2+y^2)
+  
   
   # Meter conversion
   m2ft <- 3.280839895
@@ -105,9 +105,11 @@ calculateEASAVLOS <- function(size = c(4.2,11.3) , fixedWing = FALSE) {
   distance <- 0
   
   if (fixedWing){
-    distance <- 490*m2ft*CD + 30*m2ft
+    CD <- max(x,y)
+    distance <- 490*m2ft*CD/m2ft + 30*m2ft
   } else {
-    distance <- 327*m2ft*CD + 20*m2ft
+    CD <- sqrt(max(x,y)^2+max(x,y)^2)
+    distance <- 327*m2ft*CD/m2ft + 20*m2ft
   }
   
   
@@ -256,30 +258,12 @@ To determine an overall VLOS distance, take the smaller of the two values (ALOS 
 
 ## Modeling Visual Range
 
-A core principle in assessing the maximum range at which an unmanned aircraft can be visually tracked is the concept of visual acuity, often approximated as the ability to distinguish details that subtend an angle of roughly 1 arc minute (1/60 of a degree, or 00&#176; 01&#8242; 00&#8243;) at the eye. Under standard conditions, an individual with “normal” vision (commonly referred to as 20/20 in the United States) can discern details at this resolution. For an individual with "normal" vision, the letter E on the Snellen Eye Chart (@fig-snellen-chart) on the 20/20 row corresponds to 5 arc minutes (5&#8242;) when viewed at 20 ft. The angle subtended by one stroke of the letter E corresponds to 1 arc minute (1&#8242;) as depicted in @fig-snellen-E. 
+A core principle in assessing the maximum range at which an unmanned aircraft can be visually tracked is the concept of visual acuity, often approximated as the ability to distinguish details that subtend an angle of roughly one arc minute (1/60 of a degree, or 00&#176; 01&#8242; 00&#8243;) at the eye. Under standard conditions, an individual with “normal” vision (commonly referred to as 20/20 in the United States) can discern details at this resolution. For an individual with "normal" vision, the height of every letter on the Snellen Eye Chart (@fig-snellen-chart) on the 20/20 row corresponds to 5 arc minutes (5&#8242;) when viewed at 20 ft. The angle subtended by the opening of the letter C to differentiate between the letter O is drawn to be exactly one arc minute. 
 
 ![Diagram of Snellen Acuity](snellen_chart.svg){#fig-snellen-chart width=40%}
 
-::: {#fig-snellen-E}
-```{=html}
-<svg width="100%" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
-    <!-- Letter E -->
-    <line x1="50" y1="50" x2="50" y2="150" stroke="black" stroke-width="20"/>
-    <line x1="40" y1="50" x2="100" y2="50" stroke="black" stroke-width="20"/>
-    <line x1="40" y1="100" x2="90" y2="100" stroke="black" stroke-width="20"/>
-    <line x1="40" y1="150" x2="100" y2="150" stroke="black" stroke-width="20"/>
-    
-    <!-- Extending lines -->
-    <line x1="100" y1="43" x2="350" y2="100" stroke="black" stroke-width="3"/>
-    <line x1="100" y1="58" x2="350" y2="100" stroke="black" stroke-width="3"/>
-    
-    <!-- Angle annotation -->
-    <path d="M140 50 A50 50 0 0 1 160 52" fill="none" stroke="black"/>
-    <text x="165" y="55" font-size="12">1′</text>
-</svg>
-```
-Visualization of 1&#8242;
-:::
+
+
 
 However, drone operations require not only detection of the aircraft as a point in space, but also recognition of its orientation and possible identification of flight-critical details (e.g., changes in attitude or lights).
 To incorporate both practical and safety considerations, we propose the following angular thresholds:
@@ -897,6 +881,8 @@ The experimental results show a clear pattern of reduced self-reported visibilit
 This data was evaluated with a fixed-wing drone, the AgEagle eBee.
 
 ### Finding the Optimal Threshold
+
+Using Recveiver Operator Characteristic Curve (ROC) and Youden's Index to find the optimal thresholds. Optimal threshold is the arc minutes for a binary predictor, the area under the curve (AUC) is a measure of the predictive performance for that threshold. An AUC above 0.5 is indicative that the threshold is better than random guessing.
 
 ```{r}
 # Get unique observers
