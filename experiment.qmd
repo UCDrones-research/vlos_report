@@ -1,0 +1,141 @@
+---
+title: "Experiment"
+---
+## Validating the Model
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+source("shared.R")
+
+```
+
+
+### Methodology
+
+Tested 4 drones
+
+-   DJI Mini 2
+-   Autel Evo II Pro v3
+-   DJI Inspire 2
+-   AgEagle eBee
+
+Horizontal Flight
+
+### Measurement Issues
+
+GPS can be inaccurate, timing can be inaccurate, measurements can be inaccurate.
+
+While we strived to ensure accurate measurements, it must be noted that there may be inaccuracies.
+
+What are the GPS accuracies? How does timing affect results?
+
+GPS errors are independent of distance, the further away the drone is, the less it matters. Calculations are more sensitive to horizontal errors than vertical errors.
+
+At roughly 600 ft, it's about 0.03 arc minutes per foot. Timestamps could be off by seconds, travelling at 25 ft/sec - being off by 3 seconds could mean an inaccuracy of an arc minute or greater if travelling to/from the observer. Devices are synchronized manually prior to each flight and compared against <https://www.time.gov/> for validation.
+
+## Experimental Results
+
+
+
+
+### Visibility by Estimated Acuity
+
+```{r echo=FALSE}
+
+
+# Create bins for acuity_score
+visibility_bins <- all_data %>%
+  select(arcminutes, visible) %>%
+  mutate(
+    Bin = cut(
+      acuity_score,
+      breaks = c(seq(0, 8, by = 0.5), Inf),
+      right = FALSE, # Include left endpoint but exclude the right
+      labels = c(
+        paste(seq(0, 7.5, by = 0.5), seq(0.5, 8, by = 0.5), sep = " - "),
+        ">8"
+      )
+    )
+  )
+
+# Calculate percentage of visibility being TRUE for each bin
+bin_summary <- visibility_bins %>%
+  group_by(Bin) %>%
+  summarise(
+    Total = n(), # Total number of observations in each bin
+    TrueCount = sum(visible == TRUE), # Count of TRUE visibility
+    PercentTrue = 100 * TrueCount / Total # Percentage of TRUE visibility
+  )
+
+# Display the results
+
+
+
+p <- ggplot(bin_summary, aes(x = Bin, y = PercentTrue)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "darkblue") +
+  labs(
+    title = "Percentage of Self-Reported Visibility by Estimated Acuity",
+    x = "Acuity (arcminutes)",
+    y = "Percent Visibility"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "bottom"
+        ) +
+  scale_x_discrete(limits = rev(levels(bin_summary$Bin))) + # Reverse the order of bins
+  scale_y_continuous(limits = c(0, 100), expand = c(0, 0)) + # Extend y-axis to 100%
+  # Add the vertical dashed line with a legend
+  geom_vline(
+    aes(xintercept = length(levels(Bin)) - 1.5, linetype = "Limit of Human Vision"),
+    color = "red",
+    size = 1,
+    show.legend = TRUE
+  ) + 
+  geom_vline(
+    aes(xintercept = length(levels(Bin)) - 5.5, linetype = "Proposed Threshold"),
+    color = "green",
+    size=1,
+    show.legend = TRUE
+  ) +
+  geom_vline(
+    aes(xintercept = length(levels(Bin)) - 11.5, linetype = "Proposed Safe"),
+    color = "blue",
+    size=1,
+    show.legend = TRUE
+  ) +
+  # Define linetype for the legend
+  scale_linetype_manual(
+    name = "Legend",
+    values = c("Limit of Human Vision" = "dashed","Proposed Threshold" = "dashed", "Proposed Safe" = "dashed"),
+    guide = guide_legend(override.aes = list(color = "red"))
+  ) 
+
+# Convert the ggplot to an interactive plot with plotly
+interactive_plot <- ggplotly(p)
+
+# Adjust the layout to add padding for the title
+interactive_plot <- interactive_plot %>%
+  layout(
+    margin = list(t = 100),  # Add 100px margin to the top
+    title = list(text = "<b>Percentage of Self-Reported Visibility by Estimated Acuity</b>",  # Bold title
+                 x = 0.5,  # Center align the title
+                 xanchor = "center",
+                 yanchor = "top"
+    ),
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.2,
+      yanchor = "top"
+    )
+  )
+
+# Display the interactive plot
+interactive_plot
+
+```
+
+The experimental results show a clear pattern of reduced self-reported visibility when the visual acuity is approaching 3 arc minutes, with 0\% self-reported visibility when less than 1 arc minute, roughly assumed to be the limit of human vision.

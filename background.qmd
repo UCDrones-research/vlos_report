@@ -1,0 +1,142 @@
+---
+title: "Background"
+---
+
+## Understanding Visual Line of Sight
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+source("shared.R")
+
+```
+
+Under the Federal Aviation Administration’s (FAA) regulations, particularly 14 CFR Part 107, the concept of visual line of sight (VLOS) is defined to ensure that the remote pilot or visual observer maintains constant, unaided visual contact with the small unmanned aircraft (sUA) throughout its operation. This requirement is critical for safe flight, as it allows the operator to continuously monitor the drone’s position, orientation, and potential conflicts in the airspace.
+
+14 CFR § 107.31 (“Visual line of sight aircraft operation”) specifies that the remote pilot in command (PIC) or the person manipulating the flight controls, as well as any visual observer (if used), must be able to observe the sUA:
+
+-   Unaided by any device other than corrective lenses. This prohibition on visual aids (e.g., binoculars, night vision goggles, or first-person view cameras alone) ensures that the aircraft can be seen in real time and in natural lighting conditions.
+
+-   Continuously throughout the entire flight. This means that at no point should the operator lose sight of the drone due to distance, obstacles, or environmental factors (e.g., clouds, fog, glare).
+
+-   With sufficient clarity to:
+
+    1.  Know the sUA’s location (e.g., latitude, longitude, or general position in the environment).
+    2.  Determine its altitude, attitude, and direction of flight.
+    3.  See and avoid other air traffic or hazards.
+    4.  Confirm that the sUA does not endanger the life or property of others.
+
+::: {.callout-note appearance="simple" collapse="true"}
+## EASA Guidelines - Oct 2024
+
+In October 2024, the European Union Aviation Safety Agency (EASA) published guidelines on operations in the open and specific category (Issue 2, 04 October 2024) to supplement EU drone regulations. Included in the guidelines are calculates for ALOS and DLOS.
+
+**Attitude Line of Sight (ALOS)**
+
+ALOS represents the maximum distance at which the remote pilot can reliably determine the drone’s orientation (i.e., its pitch, roll, and yaw). The value depends on the drone’s size and differs by aircraft type. For example:
+
+-   Rotorcraft/multirotor: $ALOS = 327 × (CD) + 20 m$
+-   Fixed-wing: $ALOS = 490 × (CD) + 30 m$
+
+Where the characteristic dimension (CD) is typically the drone’s largest measurable span (e.g., wingspan, diagonal motor-to-motor distance, etc.).
+
+**Detection Line of Sight (DLOS)**
+
+DLOS defines how far away the drone can be while still allowing the pilot to detect potential collisions or conflicts in the surrounding airspace. DLOS is a function of ground visibility (GV), given by:
+
+$$DLOS = 0.3 × GV$$ Since ground visibility should be at least 5 km for most VLOS operations, DLOS adjusts based on environmental conditions such as haze, fog, or rain.
+
+To determine an overall VLOS distance, take the smaller of the two values (ALOS or DLOS) to ensure both the drone’s orientation and any incoming hazards remain visible to the remote pilot.
+:::
+
+## Modeling Visual Range
+
+The visual angle $(\theta)$ subtended by the drone’s corners can be calculated using the arc cosine function as visualized in @fig-drone-dist. The two relevant drone corners are:
+
+$$A = \left( dis - \frac{w}{2}, alt + \frac{h}{2} \right), \quad B = \left( dis + \frac{w}{2}, alt - \frac{h}{2} \right)$$ Using the **arccosine formula** to solve for the angle between two vectors:
+
+$$\theta = \arccos \left( \frac{\mathbf{A} \cdot \mathbf{B}}{\|A\|\|B\|} \right)$$ {#eq-visual-angle}
+
+where:
+
+-   $dis$ = horizontal distance to the drone,
+-   $alt$ = altitude of the drone,
+-   $w$ = drone width,
+-   $h$ = drone height,
+
+Given a drone's width, height, and desired \theta, varying the altitude from 0 to 400 ft allows for solving for the estimated distance.
+
+::: {#fig-drone-dist}
+```{=html}
+<svg width="600" height="350" viewBox="0 0 600 350" xmlns="http://www.w3.org/2000/svg">
+    <!-- Axes -->
+    <line x1="50" y1="300" x2="550" y2="300" stroke="black" stroke-width="4" marker-end="url(#arrow)"/>
+    <line x1="50" y1="300" x2="50" y2="50" stroke="black" stroke-width="4" marker-end="url(#arrow)"/>
+    
+    <!-- Arrows -->
+    <defs>
+        <marker id="arrow" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto-start-reverse" markerUnits="strokeWidth">
+            <path d="M0,0 L4,2 L0,4 z" fill="black" />
+        </marker>
+    </defs>
+    
+    <!-- Drone Rectangle -->
+    <rect x="350" y="150" width="100" height="50" stroke="black" stroke-width="4" fill="none"/>
+    
+    <!-- Center Circle -->
+    <circle cx="400" cy="175" r="5" fill="none" stroke="black" stroke-width="2"/>
+    
+    <!-- Vertical Line from Circle to X-axis -->
+    <line x1="400" y1="175" x2="400" y2="300" stroke="black" stroke-width="2" stroke-dasharray="5,5"/>
+    
+    <!-- Horizontal Line from Circle to Y-axis -->
+    <line x1="400" y1="175" x2="50" y2="175" stroke="black" stroke-width="2" stroke-dasharray="5,5"/>
+    
+    <!-- Perspective Lines -->
+    <line x1="50" y1="300" x2="350" y2="150" stroke="black" stroke-width="2"/>
+    <line x1="50" y1="300" x2="450" y2="200" stroke="black" stroke-width="2"/>
+    <line x1="350" y1="150" x2="450" y2="200" stroke="black" stroke-width="2" stroke-dasharray="5,5"/>
+    
+    <!-- Drone Width and Height Labels -->
+    <line x1="350" y1="140" x2="450" y2="140" stroke="black" stroke-width="2"/>
+    <text x="390" y="130" font-size="14">Drone Width</text>
+    <line x1="460" y1="150" x2="460" y2="200" stroke="black" stroke-width="2"/>
+    <text x="470" y="175" font-size="14">Drone Height</text>
+    
+    <!-- Visual Angle -->
+    <path d="M83 283 A20 20 0 0 1 90 290" fill="none" stroke="black" stroke-width="2"/>
+    <rect x="100" y="278" width="100" height="18" fill="white" stroke="none"/>
+    <text x="102" y="290" font-size="14">θ - Visual Angle</text>
+    
+    <!-- Axis Labels -->
+    <text x="270" y="330" font-size="16">Distance</text>
+    <text x="0" y="130" font-size="16" transform="rotate(-90, 50, 140)">Altitude</text>
+</svg>
+```
+
+Estimating the angle subtended by the drone
+:::
+
+## Proposed Thresholds based on Angle Subtended by Visual Plane of Drone
+
+
+A core principle in assessing the maximum range at which an unmanned aircraft can be visually tracked is the concept of visual acuity, often approximated as the ability to distinguish details that subtend an angle of roughly one arc minute (1/60 of a degree, or 00° 01′ 00″) at the eye. Under standard conditions, an individual with “normal” vision (commonly referred to as 20/20 in the United States) can discern details at this resolution. For an individual with "normal" vision, the height of every letter on the Snellen Eye Chart (@fig-snellen-chart) on the 20/20 row corresponds to 5 arc minutes (5′) when viewed at 20 ft. The angle subtended by the opening of the letter C to differentiate between the letter O is drawn to be exactly one arc minute.
+
+![Diagram of Snellen Acuity](snellen_chart.svg){#fig-snellen-chart width="40%"}
+
+However, drone operations require not only detection of the aircraft as a point in space, but also recognition of its orientation and possible identification of flight-critical details (e.g., changes in attitude or lights). To incorporate both practical and safety considerations, we propose the following angular thresholds:
+
+::: panel-tabset
+### 1′ - Limit
+
+This is the conventional “benchmark” for human visual acuity in ideal conditions. If a drone appears smaller than this angular size, the average observer will struggle to distinguish it from the background or discern fine details such as its orientation.
+
+### 3′ - Max VLOS
+
+Recognizing that real-world conditions (e.g., lighting, contrast, visual distractions) are rarely ideal, our model sets 3 arc minutes as the angular size at which the drone can be more reliably perceived and tracked. At this threshold, observers should be able to identify major orientation changes (e.g., a significant turn, climb, or descent), aiding compliance with visual line of sight (VLOS) requirements.
+
+### 6′ - Safe VLOS
+
+For critical safety operations or scenarios where the observer must rapidly respond to any change in flight status, 6 arc minutes is proposed as a practical “comfort zone.” At this size, not only is the drone’s presence and orientation clearly visible, but there is also additional margin for environmental variables (such as glare, haze, or partial obstructions).
+:::

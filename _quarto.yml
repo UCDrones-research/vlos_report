@@ -10,6 +10,12 @@ website:
     right:
       - href: index.qmd
         text: Home
+      - href: background.qmd
+        text: Background
+      - href: experiment.qmd
+        text: Experiment
+      - href: analysis.qmd
+        text: Analysis
       - href: about.qmd
         text: Team
 

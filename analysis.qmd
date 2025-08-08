@@ -1,0 +1,335 @@
+---
+title: "Analysis"
+---
+
+# Key Observations
+
+```{r echo=FALSE}
+#| message: false
+#| warning: false
+#| echo: false
+source("shared.R")
+
+```
+
+### Finding the Optimal Threshold
+
+Using Recveiver Operator Characteristic Curve (ROC) and Youden's Index to find the optimal thresholds. Optimal threshold is the arc minutes for a binary predictor, the area under the curve (AUC) is a measure of the predictive performance for that threshold. An AUC above 0.5 is indicative that the threshold is better than random guessing.
+
+```{r echo=FALSE}
+#| message: false
+#| warning: false
+#| echo: false
+
+# Get unique observers
+uniqueObservers <- unique(observers)
+
+# Initialize an empty data frame to store results
+results <- data.frame(
+  Observer = character(),
+  SkillLevel = character(),
+  OptimalThreshold = numeric(),
+  Group = character(),
+  AUC = numeric(),
+  stringsAsFactors = FALSE
+)
+
+
+# Loop through each observer
+for (obs in uniqueObservers) {
+  # Get the indices for the current observer
+  obsIdx <- observers == obs
+  
+  # Compute ROC curve using the pROC package
+  roc <- roc(visibility[obsIdx], acuity_score[obsIdx], levels = c(0, 1))
+  AUC <- auc(roc)
+  
+  # Find Optimal Threshold (Youden's Index)
+  youdens_index <- roc$sensitivities + roc$specificities - 1
+  optimalIdx <- which.max(youdens_index)
+  optimalThreshold <- roc$thresholds[optimalIdx]
+  
+  # Store the result in the data frame
+  results <- rbind(results, data.frame(
+    Observer = obs,
+    SkillLevel = skill_level[which(obsIdx)[1]],
+    OptimalThreshold = optimalThreshold,
+    AUC = AUC
+  ))
+  
+}
+
+results$Group <- "Observers"
+
+ggplot(results, aes(x = "", y = OptimalThreshold)) +
+  geom_boxplot(
+    outlier.shape = NA, 
+    width = 0.3,
+    linewidth = 0.7,
+    fill = alpha("steelblue", 0.3),
+    ) +
+  geom_jitter(
+    aes(color = Group),
+    width = 0.1, 
+    size = 3, 
+    alpha = 0.7
+    ) +
+  labs(
+    title = "Distribution of Individual Optimal Thresholds",
+    x = NULL,
+    y = "Optimal Threshold Value"
+  )+theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
+    axis.title.y = element_text(size = 12),
+    axis.text.y = element_text(color = "black"),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank()
+  )
+```
+
+
+### Breaking out by Model and Observer Experience
+
+```{r echo = FALSE}
+# Get unique combinations of Observer and drone_type
+uniqueCombos <- unique(data.frame(SkillLevel = skill_level, DroneType = drone_type))
+
+# Initialize results data frame
+results2 <- data.frame(
+  SkillLevel = character(),
+  DroneType = character(),
+  OptimalThreshold = numeric(),
+  AUC = numeric(),
+  SkillLevel = character(),
+  stringsAsFactors = FALSE
+)
+
+# Loop through each unique combination
+for (i in 1:nrow(uniqueCombos)) {
+  skl <- uniqueCombos$SkillLevel[i]
+  drone <- uniqueCombos$DroneType[i]
+  
+  # Subset indices for the current observer and drone type
+  comboIdx <- skill_level == skl & drone_type == drone
+  
+  # Check if there are enough data points and both classes are present
+  if (sum(comboIdx) >= 2 && length(unique(visibility[comboIdx])) == 2) {
+    roc <- roc(visibility[comboIdx], acuity_score[comboIdx], levels = c(0, 1))
+    AUC <- auc(roc)
+    
+    # Compute Youden's index
+    youdens_index <- roc$sensitivities + roc$specificities - 1
+    optimalIdx <- which.max(youdens_index)
+    optimalThreshold <- roc$thresholds[optimalIdx]
+    
+    # Store the results
+    results2 <- rbind(results2, data.frame(
+      SkillLevel = skl,
+      DroneType = drone,
+      OptimalThreshold = optimalThreshold,
+      AUC = AUC
+    ))
+  }
+}
+
+```
+
+
+```{r echo=FALSE}
+
+# Reshape data wide
+threshold_matrix <- results2 %>%
+  select(SkillLevel, DroneType, OptimalThreshold) %>%
+  pivot_wider(names_from = DroneType, values_from = OptimalThreshold)
+
+# Add row means (ignoring NAs)
+threshold_matrix <- threshold_matrix %>%
+  rowwise() %>%
+  mutate(Avg = mean(c_across(-SkillLevel), na.rm = TRUE)) %>%
+  ungroup()
+
+# Compute column means
+col_means <- threshold_matrix %>%
+  summarise(across(-SkillLevel, ~mean(.x, na.rm = TRUE))) %>%
+  mutate(SkillLevel = "Mean") %>%
+  select(SkillLevel, everything())
+
+# Bind column means as final row
+threshold_matrix <- bind_rows(threshold_matrix, col_means)
+
+# Replace NA with "x" for display
+threshold_matrix_display <- threshold_matrix %>%
+  mutate(across(where(is.numeric), ~ifelse(is.na(.), "X", sprintf("%.2f", .))))
+
+# Style with gt
+gt_table <- threshold_matrix_display %>%
+  gt(rowname_col = "SkillLevel") %>%
+  tab_header(
+    title = "Optimal Thresholds by Skill Level and Drone Type"
+  ) %>%
+  fmt_missing(everything(), missing_text = "X") %>%
+  cols_align(
+    align = "right",
+    columns = everything()
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = list(
+      cells_column_labels(everything()),
+      cells_row_groups()
+    )
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "#f0f0f0"),
+    locations = cells_body(rows = SkillLevel == "Mean")
+  ) %>%
+  tab_style(
+    style = cell_fill(color = "#f0f0f0"),
+    locations = cells_body(columns = "Avg")
+  ) %>%
+  tab_style(
+    style = cell_borders(
+      sides = "bottom",
+      color = "gray",
+      weight = px(3)
+    ),
+    locations = cells_body(rows = SkillLevel == "Beginner")
+  )
+
+# Print for display in Quarto
+gt_table
+```
+
+```{r echo=FALSE}
+ggplot(results2, aes(x = DroneType, y = OptimalThreshold, fill = SkillLevel)) +
+  geom_bar(stat = "identity", position ="dodge") + 
+  labs(title = "Optimal Threshold by Drone and Skill Level")
+
+ggplot(results2, aes(x = DroneType, y = AUC, fill = SkillLevel)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "AUC by Drone and Skill Level")
+
+```
+
+Accounting for variations in different observers, the mean is `{r} mean(results$OptimalThreshold)` arc minutes, suggesting that `{r} round(mean(results$OptimalThreshold))` arc minutes is an acceptable threshold.
+
+
+
+
+### Threshold Trends by Skill Level
+
+- **Inspire 2:**  
+  Threshold generally **decreases** with skill:
+  - Beginner: `3.86`
+  - Intermediate: `4.07`
+  - Advanced: `3.33`
+
+  > Suggests that more experienced users are comfortable at longer distances.
+
+- **Mini 2:**  
+  Clear decrease in threshold with increasing skill:
+  - Beginner: `3.41`
+  - Intermediate: `3.04`
+  - Advanced: `2.80`
+
+  > Suggests that more experienced users are comfortable at longer distances.
+
+- **Autel Evo 2 Pro V3:**  
+  - Beginner: `5.42`
+  *(Intermediate missing)*
+  - Advanced: `4.34`
+
+  > Higher thresholds overall, but same trend — more experience = lower threshold.
+
+- **Ebee:**  
+  - Intermediate: `2.74`
+  - Advanced: `3.15`
+
+  > Unexpected reversal.
+
+---
+
+### AUC (Model Performance by Group)
+
+- **High AUC for Beginners on Autel & Inspire:**
+  - Autel: `0.93`
+  - Inspire: `0.98`
+
+  > Implies a clear decision boundary — users were consistent when assessing VLOS for these aircraft.
+
+- **Advanced users maintain high AUCs** across all drones:
+  - Generally above `0.96`
+
+  > Indicates consistency in expert performance.
+
+- **Intermediate users show lower AUCs:**
+  - Ebee: `0.61`
+  - Mini: `0.92`
+
+  > Suggests possible inconsistency in decision-making for this group. Perhaps somewhere in the middle of the Dunning Kruger effect.
+
+
+ - Lower AUC for eBee may possibly be related to aircraft shape - moreso than other drones, the fixed-wing eBee's viewing plane varies depending on viewing angle.
+ 
+
+---
+
+### General Pattern
+
+- **Skill appears compensatory**: Advanced observers consistently use lower thresholds, more experienced with consistent self-reported VLOS.
+- **Beginner thresholds are highest**: Limited experience, afraid of going too far.
+- **Intermediate performance is the most variable**: A little too experienced to be afraid, but too inexperienced to be consistent.
+- **Drone platform matters**: Some variability between models, but consistent between groups suggest exploring tuning of aircraft model.
+
+
+
+## Linear Model Interpretation: Optimal Threshold
+
+A linear model was used to estimate how **observer skill level** and **drone type** influence the *optimal threshold* for visibility detection.
+
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+#| 
+lm_model <- lm(OptimalThreshold ~ SkillLevel + DroneType, data = results2)
+summary(lm_model)
+
+```
+
+
+### Model Summary
+
+- **Multiple R²**: 0.91 — the model explains 91% of the variance in optimal thresholds.
+- **Adjusted R²**: 0.81 — still strong after accounting for model complexity.
+- **F-statistic p-value**: 0.029 — the overall model is statistically significant at the 0.05 level.
+
+### Coefficient Interpretation
+
+| Term                      | Estimate | Interpretation |
+|---------------------------|----------|----------------|
+| **(Intercept)**           | 5.19     | Baseline: Beginner using Autel |
+| SkillLevel: Competent     | −0.36    | Slightly lower thresholds than Beginner (not significant) |
+| SkillLevel: Experienced   | −0.63    | Lower thresholds than Beginner (marginally significant, *p* = 0.094) |
+| DroneType: Ebee           | −1.75    | Significantly lower than Autel (*p* = 0.011) |
+| DroneType: Inspire        | −1.11    | Significantly lower than Autel (*p* = 0.032) |
+| DroneType: Mini           | −1.78    | Significantly lower than Autel (*p* = 0.0065) |
+
+### Interpretation
+
+- **Skill level shows a trend**: Experienced observers tended to require lower thresholds than beginners, although this was only **marginally significant**.
+- The **reference group** is a Beginner using an Autel drone.
+
+
+### Pairwise Comparisons: Skill Level Differences in Optimal Threshold
+
+Estimated marginal means showed small, non-significant differences in optimal threshold between skill levels (averaged over drone types):
+
+- **Beginner vs Experienced**: Beginners had higher thresholds by 0.63 arcminutes (*p* = 0.19)
+- **Beginner vs Competent**: Difference of 0.36 arcminutes (*p* = 0.55)
+- **Competent vs Experienced**: Difference of 0.27 arcminutes (*p* = 0.66)
+
+None of these differences were statistically significant after Tukey adjustment, though the Beginner vs Experienced contrast showed the strongest trend.
