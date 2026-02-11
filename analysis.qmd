@@ -89,7 +89,6 @@ ggplot(results, aes(x = "", y = OptimalThreshold)) +
   )
 ```
 
-
 ### Breaking out by Model and Observer Experience
 
 ```{r echo = FALSE}
@@ -135,7 +134,6 @@ for (i in 1:nrow(uniqueCombos)) {
 }
 
 ```
-
 
 ```{r echo=FALSE}
 
@@ -215,80 +213,78 @@ ggplot(results2, aes(x = DroneType, y = AUC, fill = SkillLevel)) +
 
 Accounting for variations in different observers, the mean is `{r} mean(results$OptimalThreshold)` arc minutes, suggesting that `{r} round(mean(results$OptimalThreshold))` arc minutes is an acceptable threshold.
 
-
-
-
 ### Threshold Trends by Skill Level
 
-- **Inspire 2:**  
-  Threshold generally **decreases** with skill:
-  - Beginner: `3.86`
-  - Intermediate: `4.07`
-  - Advanced: `3.33`
+-   **Inspire 2:**\
+    Threshold generally **decreases** with skill:
 
-  > Suggests that more experienced users are comfortable at longer distances.
+    -   Beginner: `3.86`
+    -   Intermediate: `4.07`
+    -   Advanced: `3.33`
 
-- **Mini 2:**  
-  Clear decrease in threshold with increasing skill:
-  - Beginner: `3.41`
-  - Intermediate: `3.04`
-  - Advanced: `2.80`
+    > Suggests that more experienced users are comfortable at longer distances.
 
-  > Suggests that more experienced users are comfortable at longer distances.
+-   **Mini 2:**\
+    Clear decrease in threshold with increasing skill:
 
-- **Autel Evo 2 Pro V3:**  
-  - Beginner: `5.42`
-  *(Intermediate missing)*
-  - Advanced: `4.34`
+    -   Beginner: `3.41`
+    -   Intermediate: `3.04`
+    -   Advanced: `2.80`
 
-  > Higher thresholds overall, but same trend — more experience = lower threshold.
+    > Suggests that more experienced users are comfortable at longer distances.
 
-- **Ebee:**  
-  - Intermediate: `2.74`
-  - Advanced: `3.15`
+-   **Autel Evo 2 Pro V3:**
 
-  > Unexpected reversal.
+    -   Beginner: `5.42` *(Intermediate missing)*
+    -   Advanced: `4.34`
 
----
+    > Higher thresholds overall, but same trend — more experience = lower threshold.
+
+-   **Ebee:**
+
+    -   Intermediate: `2.74`
+    -   Advanced: `3.15`
+
+    > Unexpected reversal.
+
+------------------------------------------------------------------------
 
 ### AUC (Model Performance by Group)
 
-- **High AUC for Beginners on Autel & Inspire:**
-  - Autel: `0.93`
-  - Inspire: `0.98`
+-   **High AUC for Beginners on Autel & Inspire:**
 
-  > Implies a clear decision boundary — users were consistent when assessing VLOS for these aircraft.
+    -   Autel: `0.93`
+    -   Inspire: `0.98`
 
-- **Advanced users maintain high AUCs** across all drones:
-  - Generally above `0.96`
+    > Implies a clear decision boundary — users were consistent when assessing VLOS for these aircraft.
 
-  > Indicates consistency in expert performance.
+-   **Advanced users maintain high AUCs** across all drones:
 
-- **Intermediate users show lower AUCs:**
-  - Ebee: `0.61`
-  - Mini: `0.92`
+    -   Generally above `0.96`
 
-  > Suggests possible inconsistency in decision-making for this group. Perhaps somewhere in the middle of the Dunning Kruger effect.
+    > Indicates consistency in expert performance.
 
+-   **Intermediate users show lower AUCs:**
 
- - Lower AUC for eBee may possibly be related to aircraft shape - moreso than other drones, the fixed-wing eBee's viewing plane varies depending on viewing angle.
- 
+    -   Ebee: `0.61`
+    -   Mini: `0.92`
 
----
+    > Suggests possible inconsistency in decision-making for this group. Perhaps somewhere in the middle of the Dunning Kruger effect.
+
+-   Lower AUC for eBee may possibly be related to aircraft shape - moreso than other drones, the fixed-wing eBee's viewing plane varies depending on viewing angle.
+
+------------------------------------------------------------------------
 
 ### General Pattern
 
-- **Skill appears compensatory**: Advanced observers consistently use lower thresholds, more experienced with consistent self-reported VLOS.
-- **Beginner thresholds are highest**: Limited experience, afraid of going too far.
-- **Intermediate performance is the most variable**: A little too experienced to be afraid, but too inexperienced to be consistent.
-- **Drone platform matters**: Some variability between models, but consistent between groups suggest exploring tuning of aircraft model.
-
-
+-   **Skill appears compensatory**: Advanced observers consistently use lower thresholds, more experienced with consistent self-reported VLOS.
+-   **Beginner thresholds are highest**: Limited experience, afraid of going too far.
+-   **Intermediate performance is the most variable**: A little too experienced to be afraid, but too inexperienced to be consistent.
+-   **Drone platform matters**: Some variability between models, but consistent between groups suggest exploring tuning of aircraft model.
 
 ## Linear Model Interpretation: Optimal Threshold
 
 A linear model was used to estimate how **observer skill level** and **drone type** influence the *optimal threshold* for visibility detection.
-
 
 ```{r}
 #| message: false
@@ -300,36 +296,34 @@ summary(lm_model)
 
 ```
 
-
 ### Model Summary
 
-- **Multiple R²**: 0.91 — the model explains 91% of the variance in optimal thresholds.
-- **Adjusted R²**: 0.81 — still strong after accounting for model complexity.
-- **F-statistic p-value**: 0.029 — the overall model is statistically significant at the 0.05 level.
+-   **Multiple R²**: 0.91 — the model explains 91% of the variance in optimal thresholds.
+-   **Adjusted R²**: 0.81 — still strong after accounting for model complexity.
+-   **F-statistic p-value**: 0.029 — the overall model is statistically significant at the 0.05 level.
 
 ### Coefficient Interpretation
 
-| Term                      | Estimate | Interpretation |
-|---------------------------|----------|----------------|
-| **(Intercept)**           | 5.19     | Baseline: Beginner using Autel |
-| SkillLevel: Competent     | −0.36    | Slightly lower thresholds than Beginner (not significant) |
-| SkillLevel: Experienced   | −0.63    | Lower thresholds than Beginner (marginally significant, *p* = 0.094) |
-| DroneType: Ebee           | −1.75    | Significantly lower than Autel (*p* = 0.011) |
-| DroneType: Inspire        | −1.11    | Significantly lower than Autel (*p* = 0.032) |
-| DroneType: Mini           | −1.78    | Significantly lower than Autel (*p* = 0.0065) |
+| Term | Estimate | Interpretation |
+|-----------------------------------|-----------------|---------------------|
+| **(Intercept)** | 5.19 | Baseline: Beginner using Autel |
+| SkillLevel: Competent | −0.36 | Slightly lower thresholds than Beginner (not significant) |
+| SkillLevel: Experienced | −0.63 | Lower thresholds than Beginner (marginally significant, *p* = 0.094) |
+| DroneType: Ebee | −1.75 | Significantly lower than Autel (*p* = 0.011) |
+| DroneType: Inspire | −1.11 | Significantly lower than Autel (*p* = 0.032) |
+| DroneType: Mini | −1.78 | Significantly lower than Autel (*p* = 0.0065) |
 
 ### Interpretation
 
-- **Skill level shows a trend**: Experienced observers tended to require lower thresholds than beginners, although this was only **marginally significant**.
-- The **reference group** is a Beginner using an Autel drone.
-
+-   **Skill level shows a trend**: Experienced observers tended to require lower thresholds than beginners, although this was only **marginally significant**.
+-   The **reference group** is a Beginner using an Autel drone.
 
 ### Pairwise Comparisons: Skill Level Differences in Optimal Threshold
 
 Estimated marginal means showed small, non-significant differences in optimal threshold between skill levels (averaged over drone types):
 
-- **Beginner vs Experienced**: Beginners had higher thresholds by 0.63 arcminutes (*p* = 0.19)
-- **Beginner vs Competent**: Difference of 0.36 arcminutes (*p* = 0.55)
-- **Competent vs Experienced**: Difference of 0.27 arcminutes (*p* = 0.66)
+-   **Beginner vs Experienced**: Beginners had higher thresholds by 0.63 arcminutes (*p* = 0.19)
+-   **Beginner vs Competent**: Difference of 0.36 arcminutes (*p* = 0.55)
+-   **Competent vs Experienced**: Difference of 0.27 arcminutes (*p* = 0.66)
 
 None of these differences were statistically significant after Tukey adjustment, though the Beginner vs Experienced contrast showed the strongest trend.

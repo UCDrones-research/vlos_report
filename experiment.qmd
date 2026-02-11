@@ -1,6 +1,7 @@
 ---
 title: "Experiment"
 ---
+
 ## Validating the Model
 
 ```{r}
@@ -10,7 +11,6 @@ title: "Experiment"
 source("shared.R")
 
 ```
-
 
 ### Methodology
 
@@ -36,9 +36,6 @@ GPS errors are independent of distance, the further away the drone is, the less 
 At roughly 600 ft, it's about 0.03 arc minutes per foot. Timestamps could be off by seconds, travelling at 25 ft/sec - being off by 3 seconds could mean an inaccuracy of an arc minute or greater if travelling to/from the observer. Devices are synchronized manually prior to each flight and compared against <https://www.time.gov/> for validation.
 
 ## Experimental Results
-
-
-
 
 ### Visibility by Estimated Acuity
 
@@ -138,4 +135,4 @@ interactive_plot
 
 ```
 
-The experimental results show a clear pattern of reduced self-reported visibility when the visual acuity is approaching 3 arc minutes, with 0\% self-reported visibility when less than 1 arc minute, roughly assumed to be the limit of human vision.
+The experimental results show a clear pattern of reduced self-reported visibility when the visual acuity is approaching 3 arc minutes, with 0% self-reported visibility when less than 1 arc minute, roughly assumed to be the limit of human vision.

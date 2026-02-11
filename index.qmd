@@ -226,11 +226,7 @@ body {
 }
 ```
 
-
-
-
-
-An example of  for a multi-rotor drone (Autel Evo II v3) and a fixed-wing drone (AgEagle eBee) can be found below. A third panel provides the user with an interactive UI to enter in an arbitrary drone size and type for analysis.
+An example of for a multi-rotor drone (Autel Evo II v3) and a fixed-wing drone (AgEagle eBee) can be found below. A third panel provides the user with an interactive UI to enter in an arbitrary drone size and type for analysis.
 
 ::: panel-tabset
 ## Autel Evo II v3 Example
@@ -521,9 +517,10 @@ The variation is significant when comparing results for fixed-wing UAS. The EASA
     let distance = 0;
 
     if (fixedWing) {
-      distance = 490 * m2ft * CD + 30 * m2ft;
+    
+      distance = 490*m2ft*CD/m2ft + 30*m2ft;
     } else {
-      distance = 327 * m2ft * CD + 20 * m2ft;
+      distance = 327*m2ft*CD/m2ft + 20*m2ft;
     }
 
     return distance;
@@ -540,7 +537,7 @@ The variation is significant when comparing results for fixed-wing UAS. The EASA
 
     // Prepare inputs for our JS functions
     const size = [dimX, dimY];
-    const maxAlt = 400; // we loop from altitude = 1 to 400 (feet)
+    const maxAlt = 600; // we loop from altitude = 1 to 400 (feet)
     
     // Different acuities
     const acuitySafe = 6;
@@ -598,6 +595,16 @@ The variation is significant when comparing results for fixed-wing UAS. The EASA
       name: "EASA Guidelines",
       line: { color: "black", dash: "dash", width: 2 }
     };
+    const traceAlt400 = {
+      x: [0, Math.max(...safeD, ...maxD, ...badD, distanceEU)],
+      y: [400,400],
+      type: "scatter",
+      mode: "lines",
+      name: "400 ft AGL",
+      line: { color: "black", dash: "dot", width: 2 }
+    };
+      
+    
 
     // Plotly Layout
     const layout = {
@@ -616,7 +623,7 @@ The variation is significant when comparing results for fixed-wing UAS. The EASA
     };
 
     // Render/Update the Plotly plot
-    Plotly.newPlot("plot", [traceSafe, traceMax, traceBad, traceEU], layout);
+    Plotly.newPlot("plot", [traceSafe, traceMax, traceBad, traceEU, traceAlt400], layout);
   }
 
   // Initialize the plot on page load
@@ -624,11 +631,3 @@ The variation is significant when comparing results for fixed-wing UAS. The EASA
 </script>
 ```
 :::
-
-
-
-
-
-
-
-

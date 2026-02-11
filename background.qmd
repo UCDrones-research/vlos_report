@@ -120,7 +120,6 @@ Estimating the angle subtended by the drone
 
 ## Proposed Thresholds based on Angle Subtended by Visual Plane of Drone
 
-
 A core principle in assessing the maximum range at which an unmanned aircraft can be visually tracked is the concept of visual acuity, often approximated as the ability to distinguish details that subtend an angle of roughly one arc minute (1/60 of a degree, or 00° 01′ 00″) at the eye. Under standard conditions, an individual with “normal” vision (commonly referred to as 20/20 in the United States) can discern details at this resolution. For an individual with "normal" vision, the height of every letter on the Snellen Eye Chart (@fig-snellen-chart) on the 20/20 row corresponds to 5 arc minutes (5′) when viewed at 20 ft. The angle subtended by the opening of the letter C to differentiate between the letter O is drawn to be exactly one arc minute.
 
 ![Diagram of Snellen Acuity](snellen_chart.svg){#fig-snellen-chart width="40%"}
